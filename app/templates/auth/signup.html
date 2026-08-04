@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Create your clinic account · Recall</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+</head>
+<body class="dash">
+<div class="login-shell">
+  <div class="login-card" style="width:440px;">
+    <a href="{{ url_for('landing') }}" class="brand" style="display:flex;"><span class="brand-mark"></span>Recall</a>
+    <p class="sub">Set up your clinic's WhatsApp booking in a few minutes</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="form-field">
+        <label for="clinic_name">Clinic name</label>
+        <input type="text" id="clinic_name" name="clinic_name" value="{{ form.get('clinic_name', '') }}" placeholder="Smile Dental Clinic" required>
+      </div>
+      <div class="form-field">
+        <label for="owner_name">Your name</label>
+        <input type="text" id="owner_name" name="owner_name" value="{{ form.get('owner_name', '') }}" placeholder="Dr. Ahmed Khan" required>
+      </div>
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="whatsapp_number">Clinic WhatsApp number</label>
+          <input type="text" id="whatsapp_number" name="whatsapp_number" value="{{ form.get('whatsapp_number', '') }}" placeholder="+92 300 1234567" required>
+        </div>
+        <div class="form-field">
+          <label for="phone">Front-desk phone (optional)</label>
+          <input type="text" id="phone" name="phone" value="{{ form.get('phone', '') }}" placeholder="+92 21 1234567">
+        </div>
+      </div>
+      <div class="form-field">
+        <label for="address">Address (optional)</label>
+        <input type="text" id="address" name="address" value="{{ form.get('address', '') }}">
+      </div>
+      <hr class="card-divider">
+      <div class="form-field">
+        <label for="username">Choose a username</label>
+        <input type="text" id="username" name="username" value="{{ form.get('username', '') }}" required>
+      </div>
+      <div class="form-field">
+        <label for="email">Email address</label>
+        <input type="email" id="email" name="email" value="{{ form.get('email', '') }}" placeholder="you@clinic.com" required>
+        <span style="font-size:12px; color:var(--ink-soft);">Used only to reset your password if you're ever locked out.</span>
+      </div>
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" required minlength="8">
+        </div>
+        <div class="form-field">
+          <label for="confirm_password">Confirm password</label>
+          <input type="password" id="confirm_password" name="confirm_password" required minlength="8">
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary">Create clinic account</button>
+    </form>
+
+    <p class="sub" style="margin-top:20px; margin-bottom:0;">Already set up? <a href="{{ url_for('auth.login') }}" style="color:var(--primary); font-weight:600; text-decoration:none;">Sign in →</a></p>
+  </div>
+</div>
+</body>
+</html>

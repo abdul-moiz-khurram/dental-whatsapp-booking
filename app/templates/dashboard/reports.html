@@ -1,0 +1,63 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Reports{% endblock %}
+{% block content %}
+
+<div class="dash-topbar">
+  <div>
+    <h1>Reports</h1>
+    <div class="sub">Clinic performance overview for the last 30 days.</div>
+  </div>
+  <a href="{{ url_for('appointments.export_csv') }}" class="btn-sm">Export CSV</a>
+</div>
+
+<div class="stat-row">
+  <div class="stat-card"><div class="num">{{ total }}</div><div class="label">Total bookings</div></div>
+  <div class="stat-card"><div class="num">{{ no_show_rate ~ '%' if no_show_rate is not none else '—' }}</div><div class="label">No-show rate</div></div>
+  <div class="stat-card"><div class="num">{{ completed }}</div><div class="label">Completed visits</div></div>
+  <div class="stat-card"><div class="num">{{ cancelled }}</div><div class="label">Cancelled visits</div></div>
+</div>
+
+<div class="panel">
+  <div class="panel-head"><h2>Bookings by day</h2></div>
+  <div style="display:flex; align-items:flex-end; gap:2px; height:120px; overflow-x:auto; padding-bottom:4px;">
+    {% set max_count = (by_day|map(attribute=1)|list|max) if by_day else 1 %}
+    {% for d, count in by_day %}
+    <div title="{{ d.strftime('%d %b') }}: {{ count }}" style="flex:1; min-width:6px; background:var(--primary); opacity:{{ 0.35 if count == 0 else 1 }}; height:{{ (count / (max_count or 1) * 100)|round(0, 'floor')|int if max_count else 0 }}%; border-radius:2px 2px 0 0;"></div>
+    {% endfor %}
+  </div>
+  <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--ink-soft); margin-top:6px; font-family:var(--font-mono);">
+    <span>{{ by_day[0][0].strftime('%d %b') if by_day }}</span>
+    <span>{{ by_day[-1][0].strftime('%d %b') if by_day }}</span>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-head"><h2>Booking status</h2></div>
+  <table class="data-table">
+    <tbody>
+      <tr><td>Pending</td><td style="text-align:right;">{{ pending }}</td></tr>
+      <tr><td>Confirmed</td><td style="text-align:right;">{{ confirmed }}</td></tr>
+      <tr><td>Completed</td><td style="text-align:right;">{{ completed }}</td></tr>
+      <tr><td>No-show</td><td style="text-align:right;">{{ no_shows }}</td></tr>
+      <tr><td>Cancelled</td><td style="text-align:right;">{{ cancelled }}</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="panel">
+  <div class="panel-head"><h2>Bookings by doctor</h2></div>
+  {% if doctor_counts %}
+  <table class="data-table">
+    <thead><tr><th>Doctor</th><th style="text-align:right;">Bookings</th></tr></thead>
+    <tbody>
+      {% for name, count in doctor_counts %}
+      <tr><td>{{ name }}</td><td style="text-align:right;">{{ count }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state">No bookings found during this period.</div>
+  {% endif %}
+</div>
+
+{% endblock %}

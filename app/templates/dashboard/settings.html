@@ -1,0 +1,174 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Clinic settings{% endblock %}
+{% block content %}
+
+<div class="dash-topbar">
+  <div>
+    <h1>Clinic settings</h1>
+    <div class="sub">Manage the information your chatbot uses to greet patients and answer their questions.</div>
+  </div>
+</div>
+
+<form method="POST">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="section" value="clinic">
+  <div class="panel">
+    <div class="panel-head"><h2>Clinic information</h2></div>
+    <div class="form-grid">
+      <div class="form-field">
+        <label for="clinic_name">Clinic name</label>
+        <input type="text" id="clinic_name" name="clinic_name" value="{{ clinic.clinic_name }}" required>
+      </div>
+      <div class="form-field">
+        <label for="owner_name">Owner name</label>
+        <input type="text" id="owner_name" name="owner_name" value="{{ clinic.owner_name }}" required>
+      </div>
+      <div class="form-field">
+        <label for="phone">Front desk phone</label>
+        <input type="text" id="phone" name="phone" value="{{ clinic.phone or '' }}">
+      </div>
+      <div class="form-field">
+        <label for="whatsapp_number">WhatsApp business number</label>
+        <input type="text" id="whatsapp_number" name="whatsapp_number" value="{{ clinic.whatsapp_number }}" required>
+      </div>
+    </div>
+    <div class="form-field">
+      <label for="address">Address</label>
+      <input type="text" id="address" name="address" value="{{ clinic.address or '' }}">
+    </div>
+    <div class="form-field">
+      <label for="welcome_message">Chatbot welcome message</label>
+      <textarea id="welcome_message" name="welcome_message" rows="3">{{ clinic.welcome_message }}</textarea>
+    </div>
+    <div class="form-field" style="max-width:220px;">
+      <label for="slot_duration_minutes">Appointment duration (minutes)</label>
+      <input type="number" id="slot_duration_minutes" name="slot_duration_minutes" value="{{ clinic.slot_duration_minutes }}" min="10" step="5">
+    </div>
+    <button type="submit" class="btn btn-primary">Save clinic information</button>
+  </div>
+</form>
+
+<form method="POST">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="section" value="whatsapp">
+  <div class="panel">
+    <div class="panel-head">
+      <h2>WhatsApp integration</h2>
+      <span class="status-pill {{ 'confirmed' if clinic.has_whatsapp_configured() else 'pending' }}">{{ 'Connected' if clinic.has_whatsapp_configured() else 'Not connected' }}</span>
+    </div>
+    <p style="font-size:13.5px; color:var(--ink-soft); margin-top:-8px; margin-bottom:18px;">
+      Connect your WhatsApp number directly here without needing a developer to update server settings. Your credentials are encrypted before they are stored.
+    </p>
+    <div class="form-field" style="max-width:260px;">
+      <label for="whatsapp_provider">Provider</label>
+      <select id="whatsapp_provider" name="whatsapp_provider" onchange="document.getElementById('twilio-fields').style.display = this.value==='twilio' ? 'block':'none'; document.getElementById('meta-fields').style.display = this.value==='meta' ? 'block':'none';">
+        <option value="twilio" {{ 'selected' if clinic.whatsapp_provider != 'meta' }}>Twilio</option>
+        <option value="meta" {{ 'selected' if clinic.whatsapp_provider == 'meta' }}>Meta (WhatsApp Cloud API)</option>
+      </select>
+    </div>
+
+    <div id="twilio-fields" style="display:{{ 'block' if clinic.whatsapp_provider != 'meta' else 'none' }};">
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="twilio_account_sid">Twilio Account SID</label>
+          <input type="text" id="twilio_account_sid" name="twilio_account_sid" value="{{ clinic.twilio_account_sid or '' }}">
+        </div>
+        <div class="form-field">
+          <label for="twilio_whatsapp_from">Twilio WhatsApp sender</label>
+          <input type="text" id="twilio_whatsapp_from" name="twilio_whatsapp_from" value="{{ clinic.twilio_whatsapp_from or '' }}" placeholder="whatsapp:+14155238886">
+        </div>
+      </div>
+      <div class="form-field">
+        <label for="twilio_auth_token">Twilio Auth Token</label>
+        <input type="password" id="twilio_auth_token" name="twilio_auth_token" placeholder="{{ '••••••••••••  (saved - leave blank to keep it)' if clinic.twilio_auth_token_encrypted else 'Paste your auth token' }}">
+      </div>
+    </div>
+
+    <div id="meta-fields" style="display:{{ 'block' if clinic.whatsapp_provider == 'meta' else 'none' }};">
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="meta_phone_number_id">Meta phone number ID</label>
+          <input type="text" id="meta_phone_number_id" name="meta_phone_number_id" value="{{ clinic.meta_phone_number_id or '' }}">
+        </div>
+        <div class="form-field">
+          <label for="meta_verify_token">Webhook verify token</label>
+          <input type="text" id="meta_verify_token" name="meta_verify_token" value="{{ clinic.meta_verify_token or '' }}">
+        </div>
+      </div>
+      <div class="form-field">
+        <label for="meta_access_token">Meta access token</label>
+        <input type="password" id="meta_access_token" name="meta_access_token" placeholder="{{ '••••••••••••  (saved - leave blank to keep it)' if clinic.meta_access_token_encrypted else 'Paste your access token' }}">
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Save WhatsApp integration</button>
+  </div>
+</form>
+
+<form method="POST">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="section" value="knowledge">
+  <div class="panel">
+    <div class="panel-head"><h2>Chatbot knowledge base</h2></div>
+    <p style="font-size:13.5px; color:var(--ink-soft); margin-top:-8px; margin-bottom:18px;">
+      Add the information your chatbot should use when answering patient questions about hours, insurance, pricing, aftercare, and other clinic details. If a field is empty, the bot will direct patients to contact the clinic instead of guessing.
+    </p>
+    <div class="form-grid">
+      <div class="form-field">
+        <label for="opening_hours_text">Opening hours</label>
+        <textarea id="opening_hours_text" name="opening_hours_text" rows="2" placeholder="Mon-Sat, 10am-8pm. Closed Sundays.">{{ clinic.opening_hours_text or '' }}</textarea>
+      </div>
+      <div class="form-field">
+        <label for="insurance_text">Insurance</label>
+        <textarea id="insurance_text" name="insurance_text" rows="2" placeholder="We accept most major insurance providers - bring your card to your visit.">{{ clinic.insurance_text or '' }}</textarea>
+      </div>
+      <div class="form-field">
+        <label for="pricing_text">Pricing</label>
+        <textarea id="pricing_text" name="pricing_text" rows="2" placeholder="A checkup starts at Rs. 2,000; exact pricing depends on treatment.">{{ clinic.pricing_text or '' }}</textarea>
+      </div>
+      <div class="form-field">
+        <label for="treatments_text">Treatments offered</label>
+        <textarea id="treatments_text" name="treatments_text" rows="2" placeholder="Cleanings, fillings, root canals, extractions, braces, whitening.">{{ clinic.treatments_text or '' }}</textarea>
+      </div>
+      <div class="form-field">
+        <label for="aftercare_text">General aftercare</label>
+        <textarea id="aftercare_text" name="aftercare_text" rows="2" placeholder="Avoid hot food for 2 hours after a filling; contact us if pain worsens.">{{ clinic.aftercare_text or '' }}</textarea>
+      </div>
+      <div class="form-field">
+        <label for="first_time_text">First-time patients</label>
+        <textarea id="first_time_text" name="first_time_text" rows="2" placeholder="Welcome! Please arrive 10 minutes early and bring a photo ID.">{{ clinic.first_time_text or '' }}</textarea>
+      </div>
+    </div>
+    <div class="form-field">
+      <label for="emergency_instructions">Emergency instructions</label>
+      <textarea id="emergency_instructions" name="emergency_instructions" rows="2" placeholder="Call us immediately at {{ clinic.phone or 'your clinic phone' }}. For severe swelling or bleeding, go to the nearest ER.">{{ clinic.emergency_instructions or '' }}</textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Save knowledge base</button>
+  </div>
+</form>
+
+<form method="POST">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="section" value="automation">
+  <div class="panel">
+    <div class="panel-head"><h2>Reminders &amp; recall</h2></div>
+    <p style="font-size:13.5px; color:var(--ink-soft); margin-top:-8px; margin-bottom:18px;">
+      These run automatically in the background, so no one needs to remember to send them manually.
+    </p>
+    <div class="form-grid">
+      <div class="form-field">
+        <label><input type="checkbox" name="reminders_enabled" {{ 'checked' if clinic.reminders_enabled }}> Send appointment reminders</label>
+        <span style="font-size:12.5px; color:var(--ink-soft);">Sent this many hours before a confirmed appointment:</span>
+        <input type="number" name="reminder_hours_before" value="{{ clinic.reminder_hours_before }}" min="1" max="72" style="max-width:120px;">
+      </div>
+      <div class="form-field">
+        <label><input type="checkbox" name="recall_enabled" {{ 'checked' if clinic.recall_enabled }}> Send recall messages to returning patients</label>
+        <span style="font-size:12.5px; color:var(--ink-soft);">After this many days since their last completed visit, with no new booking:</span>
+        <input type="number" name="recall_interval_days" value="{{ clinic.recall_interval_days }}" min="7" max="730" style="max-width:120px;">
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary">Save automation settings</button>
+  </div>
+</form>
+
+{% endblock %}

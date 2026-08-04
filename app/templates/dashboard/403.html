@@ -1,0 +1,13 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Access restricted{% endblock %}
+{% block content %}
+<div class="dash-topbar">
+  <div>
+    <h1>This action is only available to the owner</h1>
+    <div class="sub">Your account does not have permission to perform this action. If you need access, please ask the clinic owner.</div>
+  </div>
+</div>
+<div class="panel">
+  <a href="{{ url_for('dashboard.overview') }}" class="btn-sm">&lt;- Back to dashboard</a>
+</div>
+{% endblock %}

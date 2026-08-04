@@ -1,0 +1,55 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Conversations{% endblock %}
+{% block content %}
+
+<div class="dash-topbar">
+  <div>
+    <h1>Conversations</h1>
+    <div class="sub">View chatbot conversations with patients and step in whenever needed.</div>
+  </div>
+</div>
+
+{% if grouped %}
+  {% for phone, messages in grouped.items() %}
+  <div class="panel">
+    <div class="panel-head">
+      <h2>{{ phone }}</h2>
+      {% if takeover_state[phone] %}
+        <span class="status-pill pending">You're managing this conversation</span>
+      {% else %}
+        <span class="status-pill confirmed">Bot is responding</span>
+      {% endif %}
+    </div>
+    <div class="conv-thread">
+      {% for m in messages %}
+        <div class="bubble {{ 'out' if m.sender_type != 'patient' else 'in' }}">{{ m.message }}</div>
+      {% endfor %}
+    </div>
+
+    <hr class="card-divider">
+
+    <div style="display:flex; gap:10px; align-items:flex-start;">
+      <form method="POST" action="{{ url_for('dashboard.reply_to_patient', phone=phone) }}" style="flex:1; display:flex; gap:8px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="text" name="message" placeholder="Reply as the clinic..." required style="flex:1; border:1px solid var(--line); border-radius:10px; padding:10px 13px; font-size:14px; font-family:var(--font-body);">
+        <button type="submit" class="btn-sm">Send</button>
+      </form>
+      {% if takeover_state[phone] %}
+      <form method="POST" action="{{ url_for('dashboard.return_to_bot', phone=phone) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn-sm">Return control to bot</button>
+      </form>
+      {% else %}
+      <form method="POST" action="{{ url_for('dashboard.take_over_conversation', phone=phone) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn-sm">Take control</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+{% else %}
+  <div class="panel"><div class="empty-state">No conversations yet. Patient messages will appear here when they contact your clinic.</div></div>
+{% endif %}
+
+{% endblock %}

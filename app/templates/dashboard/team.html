@@ -1,0 +1,76 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Team{% endblock %}
+{% block content %}
+
+<div class="dash-topbar">
+  <div>
+    <h1>Team</h1>
+    <div class="sub">Create separate logins for your front desk team and dentists instead of sharing one account.</div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-head"><h2>Add a team member</h2></div>
+  <form method="POST" action="{{ url_for('dashboard.team_add') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="form-grid">
+      <div class="form-field">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" required>
+      </div>
+      <div class="form-field">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" required>
+      </div>
+      <div class="form-field">
+        <label for="role">Role</label>
+        <select id="role" name="role" onchange="document.getElementById('doctor-link-field').style.display = this.value === 'dentist' ? 'block' : 'none';">
+          <option value="staff">Staff (receptionist)</option>
+          <option value="dentist">Dentist</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label for="password">Temporary password</label>
+        <input type="password" id="password" name="password" minlength="8" required>
+      </div>
+    </div>
+    <div class="form-field" id="doctor-link-field" style="display:none; max-width:320px;">
+      <label for="doctor_id">Link to doctor profile (so their dashboard shows their own schedule)</label>
+      <select id="doctor_id" name="doctor_id">
+        <option value="">None</option>
+        {% for d in doctors %}
+        <option value="{{ d.id }}">Dr. {{ d.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Add team member</button>
+  </form>
+</div>
+
+<div class="panel">
+  <div class="panel-head"><h2>Team members with access</h2></div>
+  <table class="data-table">
+    <thead><tr><th>Username</th><th>Email</th><th>Role</th><th>Linked doctor</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      {% for m in members %}
+      <tr>
+        <td>{{ m.username }}{% if m.id == current_user.id %} <span style="color:var(--ink-soft); font-size:12px;">(you)</span>{% endif %}</td>
+        <td>{{ m.email or '-' }}</td>
+        <td style="text-transform:capitalize;">{{ m.role }}</td>
+        <td>{{ 'Dr. ' + m.doctor_profile.name if m.doctor_profile else '-' }}</td>
+        <td><span class="status-pill {{ 'confirmed' if m.is_active_staff else 'cancelled' }}">{{ 'Active' if m.is_active_staff else 'Deactivated' }}</span></td>
+        <td>
+          {% if m.id != current_user.id %}
+          <form method="POST" action="{{ url_for('dashboard.team_toggle', user_id=m.id) }}" onsubmit="return confirm('{{ 'Deactivate' if m.is_active_staff else 'Reactivate' }} {{ m.username }}?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn-sm {{ 'danger' if m.is_active_staff else '' }}">{{ 'Deactivate' if m.is_active_staff else 'Reactivate' }}</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}

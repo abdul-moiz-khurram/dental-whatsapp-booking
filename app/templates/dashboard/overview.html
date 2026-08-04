@@ -1,0 +1,142 @@
+{% extends "dashboard/base.html" %}
+{% block title %}Overview{% endblock %}
+{% block content %}
+
+<div class="dash-topbar">
+  <div>
+    <h1>{% if is_dentist_view %}Your schedule{% else %}Welcome back.{% endif %}</h1>
+    <div class="sub">
+      {% if is_dentist_view %}Today's patients and upcoming appointments.
+      {% elif current_user.is_owner() %}A quick look at how your clinic is performing.
+      {% else %}Here's what's happening at the clinic today.{% endif %}
+    </div>
+  </div>
+</div>
+
+{% if show_checklist %}
+<div class="panel" style="border-color:var(--primary); background:var(--primary-tint);">
+  <div class="panel-head"><h2>Complete your setup</h2></div>
+  <table class="data-table" style="background:transparent;">
+    <tbody>
+      <tr>
+        <td style="width:28px;">{{ '✅' if checklist.has_doctor else '⬜' }}</td>
+        <td>Add your first doctor</td>
+        <td style="text-align:right;">{% if not checklist.has_doctor %}<a href="{{ url_for('doctors.list_doctors') }}" class="btn-sm">Add doctor</a>{% endif %}</td>
+      </tr>
+      <tr>
+        <td>{{ '✅' if checklist.whatsapp_connected else '⬜' }}</td>
+        <td>Connect your WhatsApp number</td>
+        <td style="text-align:right;">{% if not checklist.whatsapp_connected and current_user.is_owner() %}<a href="{{ url_for('dashboard.settings') }}" class="btn-sm">Connect</a>{% endif %}</td>
+      </tr>
+      <tr>
+        <td>{{ '✅' if checklist.welcome_customized else '⬜' }}</td>
+        <td>Customize your welcome message</td>
+        <td style="text-align:right;">{% if not checklist.welcome_customized and current_user.is_owner() %}<a href="{{ url_for('dashboard.settings') }}" class="btn-sm">Edit</a>{% endif %}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if business_insights %}
+<div class="stat-row">
+  <div class="stat-card"><div class="num">{{ business_insights.total_last_30d }}</div><div class="label">Bookings in the last 30 days</div></div>
+  <div class="stat-card"><div class="num">{{ business_insights.no_show_rate ~ '%' if business_insights.no_show_rate is not none else '--' }}</div><div class="label">No-show rate</div></div>
+  <div class="stat-card"><div class="num">{{ business_insights.completed }}</div><div class="label">Completed visits</div></div>
+  <div class="stat-card"><div class="num">{{ business_insights.cancelled }}</div><div class="label">Cancelled visits</div></div>
+</div>
+<div style="margin:-14px 0 24px;"><a href="{{ url_for('dashboard.reports') }}" class="btn-sm">View full reports →</a></div>
+{% else %}
+<div class="stat-row">
+  <div class="stat-card"><div class="num">{{ stats.today_count }}</div><div class="label">{% if is_dentist_view %}Your appointments today{% else %}Today's appointments{% endif %}</div></div>
+  <div class="stat-card"><div class="num">{{ stats.pending_count }}</div><div class="label">Awaiting confirmation</div></div>
+  <div class="stat-card"><div class="num">{{ stats.patients_count }}</div><div class="label">Total patients</div></div>
+  <div class="stat-card"><div class="num">{{ stats.doctors_count }}</div><div class="label">Active doctors</div></div>
+</div>
+{% endif %}
+
+{% if current_user.role == 'staff' and pending_appointments %}
+<div class="panel" style="border-color:#DCD0B8;">
+  <div class="panel-head">
+    <h2>Needs your attention: appointments awaiting confirmation</h2>
+    <a href="{{ url_for('appointments.list_appointments', status='pending') }}" class="btn-sm">View pending</a>
+  </div>
+  <table class="data-table">
+    <thead><tr><th>Date</th><th>Time</th><th>Patient</th><th>Doctor</th><th></th></tr></thead>
+    <tbody>
+      {% for a in pending_appointments %}
+      <tr>
+        <td>{{ a.appointment_date.strftime('%d %b') }}</td>
+        <td>{{ a.appointment_time.strftime('%I:%M %p').lstrip('0') }}</td>
+        <td>{{ a.patient.name or a.patient.phone }}</td>
+        <td>{{ 'Dr. ' + a.doctor.name if a.doctor else 'No preference' }}</td>
+        <td>
+          <form method="POST" action="{{ url_for('appointments.confirm', appointment_id=a.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn-sm">Confirm</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<div class="panel">
+  <div class="panel-head">
+    <h2>{% if is_dentist_view %}Your patients today{% else %}Today's appointments{% endif %}</h2>
+    <a href="{{ url_for('appointments.list_appointments') }}" class="btn-sm">View all</a>
+  </div>
+  {% if todays_appointments %}
+  <table class="data-table">
+    <thead><tr><th>Time</th><th>Patient</th><th>Doctor</th><th>Reason</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      {% for a in todays_appointments %}
+      <tr>
+        <td>{{ a.appointment_time.strftime('%I:%M %p').lstrip('0') }}</td>
+        <td>{{ a.patient.name or a.patient.phone }}</td>
+        <td>{{ 'Dr. ' + a.doctor.name if a.doctor else 'No preference' }}</td>
+        <td>{{ a.reason or '-' }}</td>
+        <td><span class="status-pill {{ a.status }}">{{ 'No-show' if a.status == 'no_show' else a.status }}</span></td>
+        <td>
+          <div class="row-actions">
+            {% if a.status == 'pending' %}
+            <form method="POST" action="{{ url_for('appointments.confirm', appointment_id=a.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn-sm">Confirm</button></form>
+            {% endif %}
+            <form method="POST" action="{{ url_for('appointments.cancel', appointment_id=a.id) }}" onsubmit="return confirm('Cancel this appointment?');">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn-sm danger">Cancel</button></form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state">No appointments scheduled for today.</div>
+  {% endif %}
+</div>
+
+<div class="panel">
+  <div class="panel-head"><h2>Upcoming appointments</h2></div>
+  {% if upcoming_appointments %}
+  <table class="data-table">
+    <thead><tr><th>Date</th><th>Time</th><th>Patient</th><th>Doctor</th><th>Status</th></tr></thead>
+    <tbody>
+      {% for a in upcoming_appointments %}
+      <tr>
+        <td>{{ a.appointment_date.strftime('%d %b') }}</td>
+        <td>{{ a.appointment_time.strftime('%I:%M %p').lstrip('0') }}</td>
+        <td>{{ a.patient.name or a.patient.phone }}</td>
+        <td>{{ 'Dr. ' + a.doctor.name if a.doctor else 'No preference' }}</td>
+        <td><span class="status-pill {{ a.status }}">{{ 'No-show' if a.status == 'no_show' else a.status }}</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state">No upcoming appointments scheduled.</div>
+  {% endif %}
+</div>
+
+{% endblock %}
